@@ -1,0 +1,33 @@
+brew "git"
+brew "git-lfs"
+brew "gh"
+
+brew "ripgrep"
+brew "fd"
+brew "fzf"
+brew "jq"
+brew "yq"
+brew "bat"
+brew "eza"
+brew "tree"
+
+brew "cmake"
+brew "ninja"
+brew "pkgconf"
+brew "shellcheck"
+brew "shfmt"
+brew "direnv"
+brew "just"
+
+brew "curl"
+brew "wget"
+brew "ca-certificates"
+brew "openssl@3"
+brew "sevenzip"
+
+brew "mise"
+brew "uv"
+
+cask "orbstack"
+cask "visual-studio-code"
+cask "iterm2"
