@@ -29,6 +29,7 @@ brew "mise"
 brew "uv"
 
 brew "neovim"
+brew "tree-sitter-cli"
 
 cask "orbstack"
 cask "visual-studio-code"

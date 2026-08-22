@@ -23,8 +23,12 @@ To install just Neovim and the IDE config:
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh | zsh
 ```
 
-Requires Homebrew. Use `--dry-run` or `--check` the same way as the main
-installer:
+Requires Homebrew. The script installs Neovim and `tree-sitter-cli`, copies
+the config, restores Lazy plugins, then blocks until Mason language
+servers/formatters/CodeLLDB and Treesitter parsers are installed. If `rustup`
+is on PATH it also adds `rust-analyzer` and `rustfmt`.
+
+Use `--dry-run` or `--check` the same way as the main installer:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh |

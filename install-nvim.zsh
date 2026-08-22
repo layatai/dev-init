@@ -121,20 +121,37 @@ ensure_repo() {
 
 print_plan() {
   cat <<EOF
-Would install:
-  - Neovim via Homebrew
+Would install and fully bootstrap the Neovim IDE:
+  - Neovim and tree-sitter-cli via Homebrew
+  - rust-analyzer and rustfmt via rustup, when rustup is present
   - the managed NvChad IDE config into ~/.config/nvim
-  - plugins from nvim/lazy-lock.json
+  - Lazy plugins from nvim/lazy-lock.json
+  - Mason language servers, formatters, and CodeLLDB
+  - Treesitter parsers for Rust, TypeScript, Lua, and related filetypes
 EOF
 }
 
 check_setup() {
   local failures=0
+  local name
+  local -a mason_bins=(
+    lua-language-server stylua typescript-language-server prettier
+    vscode-json-language-server vscode-html-language-server
+    vscode-css-language-server vscode-eslint-language-server
+    taplo bash-language-server marksman codelldb
+  )
 
   if command -v nvim >/dev/null 2>&1; then
     printf "  %-14s %s\n" "nvim" "ok"
   else
     printf "  %-14s %s\n" "nvim" "missing"
+    failures=1
+  fi
+
+  if command -v tree-sitter >/dev/null 2>&1; then
+    printf "  %-14s %s\n" "tree-sitter" "ok"
+  else
+    printf "  %-14s %s\n" "tree-sitter" "missing"
     failures=1
   fi
 
@@ -145,18 +162,46 @@ check_setup() {
     failures=1
   fi
 
+  if [[ -d "$HOME/.local/share/nvim/lazy/lazy.nvim" ]]; then
+    printf "  %-14s %s\n" "lazy plugins" "ok"
+  else
+    printf "  %-14s %s\n" "lazy plugins" "missing"
+    failures=1
+  fi
+
+  for name in "${mason_bins[@]}"; do
+    if [[ -x "$HOME/.local/share/nvim/mason/bin/$name" ]]; then
+      printf "  %-14s %s\n" "$name" "ok"
+    else
+      printf "  %-14s %s\n" "$name" "missing"
+      failures=1
+    fi
+  done
+
+  if command -v rustup >/dev/null 2>&1; then
+    if command -v rust-analyzer >/dev/null 2>&1; then
+      printf "  %-14s %s\n" "rust-analyzer" "ok"
+    else
+      printf "  %-14s %s\n" "rust-analyzer" "missing"
+      failures=1
+    fi
+  fi
+
   (( failures == 0 )) || fail "Neovim IDE check found missing requirements"
   info "Neovim IDE check passed"
 }
 
 install_neovim() {
   activate_brew || fail "Homebrew is required. Run install.zsh first, or install brew."
-  if command -v nvim >/dev/null 2>&1; then
-    info "Neovim is already installed"
+  local -a formulas=()
+  command -v nvim >/dev/null 2>&1 || formulas+=(neovim)
+  command -v tree-sitter >/dev/null 2>&1 || formulas+=(tree-sitter-cli)
+  if (( ${#formulas} == 0 )); then
+    info "Neovim and tree-sitter-cli are already installed"
     return
   fi
-  info "Installing Neovim"
-  brew install neovim
+  info "Installing ${formulas[*]}"
+  brew install "${formulas[@]}"
 }
 
 install_config() {
@@ -185,6 +230,7 @@ install_config() {
     lua/configs/conform.lua
     lua/configs/lazy.lua
     lua/configs/lspconfig.lua
+    bootstrap.lua
   )
   local file
   for file in "${files[@]}"; do
@@ -194,14 +240,29 @@ install_config() {
   print -r -- "${DEV_INIT_REPO}@${DEV_INIT_REF}" >"$marker"
 }
 
-sync_plugins() {
-  command -v nvim >/dev/null 2>&1 || {
-    warn "neovim is not on PATH yet; open nvim after this shell reloads"
+install_rust_tools() {
+  if ! command -v rustup >/dev/null 2>&1; then
+    warn "rustup is not installed; skip rust-analyzer/rustfmt (rustaceanvim needs rust-analyzer on PATH)"
     return
-  }
+  fi
+  info "Installing rust-analyzer and rustfmt"
+  rustup component add rust-analyzer rustfmt
+}
+
+sync_ide() {
+  activate_brew || true
+  command -v nvim >/dev/null 2>&1 || fail "neovim is not on PATH"
+  local dest="$HOME/.config/nvim"
+
   info "Syncing Neovim plugins from the lockfile"
   nvim --headless "+Lazy! restore" "+qa" ||
-    warn "Neovim plugin restore failed; open nvim later to finish Lazy setup"
+    fail "Neovim plugin restore failed"
+
+  info "Installing Mason tools and Treesitter parsers"
+  nvim --headless \
+    "+luafile $dest/bootstrap.lua" \
+    "+qa" ||
+    fail "Neovim IDE bootstrap failed"
 }
 
 if (( DRY_RUN == 1 )); then
@@ -217,8 +278,9 @@ fi
 
 TEMP_DIR="${TEMP_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/dev-init-nvim.XXXXXX")}"
 install_neovim
+install_rust_tools
 install_config
-sync_plugins
+sync_ide
 hash -r
 check_setup
-info "Neovim IDE setup complete. Open nvim to finish Mason language-server installs."
+info "Neovim IDE setup complete."
