@@ -13,7 +13,9 @@ DRY_RUN=0
 CHECK_ONLY=0
 NON_INTERACTIVE=0
 SKIP_CASKS=0
+SKIP_NVIM=0
 TEMP_DIR=""
+REPO_ROOT=""
 
 info() {
   print -P -u2 "%F{blue}==>%f $*"
@@ -37,6 +39,7 @@ Options:
   --check            Verify the expected tools and configuration
   --non-interactive  Do not prompt, open applications, or start authentication
   --skip-casks       Skip OrbStack, Visual Studio Code, and iTerm2
+  --skip-nvim        Skip Neovim and the managed IDE config
   --ref REF          Download repository files from a specific Git ref
   -h, --help         Show this help
 USAGE
@@ -62,6 +65,9 @@ while (( $# > 0 )); do
       ;;
     --skip-casks)
       SKIP_CASKS=1
+      ;;
+    --skip-nvim)
+      SKIP_NVIM=1
       ;;
     --ref)
       shift
@@ -126,36 +132,52 @@ activate_brew() {
   eval "$("$brew_bin" shellenv)"
 }
 
-script_brewfile() {
-  local source_dir=""
+ensure_repo() {
+  if [[ -n "$REPO_ROOT" && -f "$REPO_ROOT/Brewfile" ]]; then
+    return
+  fi
 
   if [[ -f "$INSTALLER_SOURCE" ]]; then
-    source_dir="${INSTALLER_SOURCE:A:h}"
-    if [[ -f "$source_dir/Brewfile" ]]; then
-      print "$source_dir/Brewfile"
+    local source_dir="${INSTALLER_SOURCE:A:h}"
+    if [[ -f "$source_dir/Brewfile" && -d "$source_dir/nvim" ]]; then
+      REPO_ROOT="$source_dir"
       return
     fi
   fi
 
   TEMP_DIR="${TEMP_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/dev-init.XXXXXX")}"
-  local destination="$TEMP_DIR/Brewfile"
-  local url="https://raw.githubusercontent.com/${DEV_INIT_REPO}/${DEV_INIT_REF}/Brewfile"
-  info "Downloading Brewfile from ${DEV_INIT_REPO}@${DEV_INIT_REF}"
-  /usr/bin/curl --fail --silent --show-error --location "$url" --output "$destination" ||
+  local archive="$TEMP_DIR/dev-init.tar.gz"
+  local extracted="$TEMP_DIR/repo"
+  local url="https://github.com/${DEV_INIT_REPO}/archive/${DEV_INIT_REF}.tar.gz"
+  info "Downloading ${DEV_INIT_REPO}@${DEV_INIT_REF}"
+  /usr/bin/curl --fail --silent --show-error --location "$url" --output "$archive" ||
     fail "could not download $url"
-  print "$destination"
+  mkdir -p "$extracted"
+  /usr/bin/tar -xzf "$archive" -C "$extracted" --strip-components=1 ||
+    fail "could not extract $url"
+  [[ -f "$extracted/Brewfile" ]] || fail "archive is missing Brewfile"
+  REPO_ROOT="$extracted"
+}
+
+script_brewfile() {
+  ensure_repo
+  print "$REPO_ROOT/Brewfile"
 }
 
 effective_brewfile() {
   local source_file="$1"
-  if (( SKIP_CASKS == 0 )); then
+  if (( SKIP_CASKS == 0 && SKIP_NVIM == 0 )); then
     print "$source_file"
     return
   fi
 
   TEMP_DIR="${TEMP_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/dev-init.XXXXXX")}"
-  local destination="$TEMP_DIR/Brewfile.no-casks"
-  /usr/bin/awk '!/^cask /' "$source_file" >"$destination"
+  local destination="$TEMP_DIR/Brewfile.filtered"
+  /usr/bin/awk -v skip_casks="$SKIP_CASKS" -v skip_nvim="$SKIP_NVIM" '
+    skip_casks == 1 && /^cask / { next }
+    skip_nvim == 1 && $0 == "brew \"neovim\"" { next }
+    { print }
+  ' "$source_file" >"$destination"
   print "$destination"
 }
 
@@ -170,6 +192,11 @@ Would configure this Apple-silicon Mac with:
   - mise, uv, Node LTS, stable Python, pnpm
   - a managed zsh initialization block
 EOF
+  if (( SKIP_NVIM == 0 )); then
+    print "  - Neovim with a managed NvChad IDE config"
+  else
+    print "  - Neovim skipped"
+  fi
   if (( SKIP_CASKS == 0 )); then
     print "  - OrbStack, Visual Studio Code, iTerm2"
   else
@@ -188,6 +215,7 @@ check_setup() {
     cmake ninja pkgconf shellcheck shfmt direnv just
     curl wget 7zz mise uv node python pnpm
   )
+  (( SKIP_NVIM == 0 )) && commands+=(nvim)
 
   info "Checking command-line tools"
   for command_name in "${commands[@]}"; do
@@ -206,6 +234,15 @@ check_setup() {
     ! grep -Fq "$BLOCK_END" "$HOME/.zshrc" 2>/dev/null; then
     warn "managed zsh block is missing"
     failures=1
+  fi
+
+  if (( SKIP_NVIM == 0 )); then
+    if [[ -f "$HOME/.config/nvim/.dev-init" ]]; then
+      printf "  %-14s %s\n" "nvim config" "ok"
+    else
+      printf "  %-14s %s\n" "nvim config" "missing"
+      failures=1
+    fi
   fi
 
   if (( SKIP_CASKS == 0 )); then
@@ -338,6 +375,52 @@ configure_git_lfs() {
   git lfs install
 }
 
+install_nvim() {
+  (( SKIP_NVIM == 0 )) || return
+  ensure_repo
+  [[ -d "$REPO_ROOT/nvim" ]] || fail "repository is missing the nvim config"
+
+  local dest="$HOME/.config/nvim"
+  local marker="$dest/.dev-init"
+
+  if [[ -e "$dest" && ! -f "$marker" ]]; then
+    local backup="${dest}.backup.$(date +%Y%m%d%H%M%S)"
+    mv "$dest" "$backup"
+    info "Backed up existing Neovim config to $backup"
+  fi
+
+  info "Installing managed Neovim IDE config"
+  mkdir -p "$dest/lua/plugins" "$dest/lua/configs"
+  local -a files=(
+    .dev-init
+    .stylua.toml
+    init.lua
+    lazy-lock.json
+    lua/autocmds.lua
+    lua/chadrc.lua
+    lua/mappings.lua
+    lua/options.lua
+    lua/plugins/init.lua
+    lua/configs/conform.lua
+    lua/configs/lazy.lua
+    lua/configs/lspconfig.lua
+  )
+  local file
+  for file in "${files[@]}"; do
+    [[ -f "$REPO_ROOT/nvim/$file" ]] || fail "missing nvim/$file"
+    cp "$REPO_ROOT/nvim/$file" "$dest/$file"
+  done
+  print -r -- "${DEV_INIT_REPO}@${DEV_INIT_REF}" >"$marker"
+
+  if command -v nvim >/dev/null 2>&1; then
+    info "Syncing Neovim plugins from the lockfile"
+    nvim --headless "+Lazy! restore" "+qa" ||
+      warn "Neovim plugin restore failed; open nvim later to finish Lazy setup"
+  else
+    warn "neovim is not on PATH yet; open nvim after this shell reloads"
+  fi
+}
+
 configure_github() {
   gh auth status >/dev/null 2>&1 && {
     info "GitHub CLI is already authenticated"
@@ -406,6 +489,7 @@ install_homebrew
 install_packages "$brewfile"
 update_zshrc
 install_runtimes
+install_nvim
 configure_git_lfs
 
 if is_interactive; then

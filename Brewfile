@@ -28,6 +28,8 @@ brew "sevenzip"
 brew "mise"
 brew "uv"
 
+brew "neovim"
+
 cask "orbstack"
 cask "visual-studio-code"
 cask "iterm2"
