@@ -122,7 +122,7 @@ ensure_repo() {
 print_plan() {
   cat <<EOF
 Would install and fully bootstrap the Neovim IDE:
-  - Neovim and tree-sitter-cli via Homebrew
+  - Neovim, tree-sitter-cli, and Node (npm) via Homebrew
   - rust-analyzer and rustfmt via rustup, when rustup is present
   - the managed NvChad IDE config into ~/.config/nvim
   - Lazy plugins from nvim/lazy-lock.json
@@ -152,6 +152,13 @@ check_setup() {
     printf "  %-14s %s\n" "tree-sitter" "ok"
   else
     printf "  %-14s %s\n" "tree-sitter" "missing"
+    failures=1
+  fi
+
+  if command -v npm >/dev/null 2>&1; then
+    printf "  %-14s %s\n" "npm" "ok"
+  else
+    printf "  %-14s %s\n" "npm" "missing"
     failures=1
   fi
 
@@ -196,8 +203,9 @@ install_neovim() {
   local -a formulas=()
   command -v nvim >/dev/null 2>&1 || formulas+=(neovim)
   command -v tree-sitter >/dev/null 2>&1 || formulas+=(tree-sitter-cli)
+  command -v npm >/dev/null 2>&1 || formulas+=(node)
   if (( ${#formulas} == 0 )); then
-    info "Neovim and tree-sitter-cli are already installed"
+    info "Neovim, tree-sitter-cli, and Node are already installed"
     return
   fi
   info "Installing ${formulas[*]}"

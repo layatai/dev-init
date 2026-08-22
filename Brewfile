@@ -30,6 +30,7 @@ brew "uv"
 
 brew "neovim"
 brew "tree-sitter-cli"
+brew "node"
 
 cask "orbstack"
 cask "visual-studio-code"
