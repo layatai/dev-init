@@ -79,6 +79,8 @@ done
 locate_brew() {
   if command -v brew >/dev/null 2>&1; then
     command -v brew
+  elif [[ -x "$HOME/.homebrew/bin/brew" ]]; then
+    print "$HOME/.homebrew/bin/brew"
   elif [[ -x /opt/homebrew/bin/brew ]]; then
     print /opt/homebrew/bin/brew
   else
@@ -90,6 +92,54 @@ activate_brew() {
   local brew_bin
   brew_bin="$(locate_brew)" || return 1
   eval "$("$brew_bin" shellenv)"
+}
+
+login_has() {
+  local name="$1"
+  # A real login shell sources .zprofile. `ssh host 'cmd'` and `curl | zsh` do not.
+  /bin/zsh -l -c "command -v ${(q)name}" >/dev/null 2>&1
+}
+
+ensure_login_path() {
+  activate_brew || return 0
+  if login_has nvim; then
+    return
+  fi
+
+  local brew_bin brew_bin_dir
+  brew_bin="$(locate_brew)" || return 0
+  brew_bin_dir="${brew_bin:h}"
+  mkdir -p "$HOME/.local/bin"
+  local name
+  for name in nvim tree-sitter; do
+    if [[ -x "$brew_bin_dir/$name" ]]; then
+      ln -sfn "$brew_bin_dir/$name" "$HOME/.local/bin/$name"
+    fi
+  done
+
+  if login_has nvim; then
+    info "Linked nvim onto the login PATH via ~/.local/bin"
+    return
+  fi
+
+  local zprofile="$HOME/.zprofile"
+  local start="# >>> dev-init-nvim >>>"
+  local end="# <<< dev-init-nvim <<<"
+  if [[ -f "$zprofile" ]] && grep -Fq "$start" "$zprofile"; then
+    warn "nvim is installed at $brew_bin_dir/nvim but is still not on the login PATH"
+    return
+  fi
+
+  info "Adding $brew_bin_dir to login PATH in .zprofile"
+  if [[ -f "$zprofile" ]]; then
+    cp "$zprofile" "$zprofile.backup.$(date +%Y%m%d%H%M%S)"
+  fi
+  {
+    print
+    print -- "$start"
+    print -- "path+=(${(q)brew_bin_dir})"
+    print -- "$end"
+  } >>"$zprofile"
 }
 
 ensure_repo() {
@@ -123,6 +173,7 @@ print_plan() {
   cat <<EOF
 Would install and fully bootstrap the Neovim IDE:
   - Neovim, tree-sitter-cli, and Node (npm) via Homebrew
+  - put nvim on the login PATH (~/.homebrew, /opt/homebrew, or ~/.local/bin)
   - rust-analyzer and rustfmt via rustup, when rustup is present
   - the managed NvChad IDE config into ~/.config/nvim
   - Lazy plugins from nvim/lazy-lock.json
@@ -141,21 +192,21 @@ check_setup() {
     taplo bash-language-server marksman codelldb
   )
 
-  if command -v nvim >/dev/null 2>&1; then
+  if login_has nvim; then
     printf "  %-14s %s\n" "nvim" "ok"
   else
     printf "  %-14s %s\n" "nvim" "missing"
     failures=1
   fi
 
-  if command -v tree-sitter >/dev/null 2>&1; then
+  if login_has tree-sitter; then
     printf "  %-14s %s\n" "tree-sitter" "ok"
   else
     printf "  %-14s %s\n" "tree-sitter" "missing"
     failures=1
   fi
 
-  if command -v npm >/dev/null 2>&1; then
+  if login_has npm; then
     printf "  %-14s %s\n" "npm" "ok"
   else
     printf "  %-14s %s\n" "npm" "missing"
@@ -289,6 +340,7 @@ install_neovim
 install_rust_tools
 install_config
 sync_ide
+ensure_login_path
 hash -r
 check_setup
-info "Neovim IDE setup complete."
+info "Neovim IDE setup complete. Open a new terminal if nvim is not on PATH yet."

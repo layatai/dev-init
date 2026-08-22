@@ -23,8 +23,9 @@ To install just Neovim and the IDE config:
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh | zsh
 ```
 
-Requires Homebrew. The script installs Neovim, `tree-sitter-cli`, and Node
-(`npm` is required for Mason TypeScript/Prettier/ESLint packages), copies
+Requires Homebrew (`~/.homebrew` or `/opt/homebrew`). The script installs
+Neovim, `tree-sitter-cli`, and Node (`npm` is required for Mason
+TypeScript/Prettier/ESLint packages), puts `nvim` on the login PATH, copies
 the config, restores Lazy plugins, then blocks until Mason language
 servers/formatters/CodeLLDB and Treesitter parsers are installed. If `rustup`
 is on PATH it also adds `rust-analyzer` and `rustfmt`.

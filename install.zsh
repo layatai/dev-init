@@ -119,6 +119,8 @@ confirm() {
 locate_brew() {
   if command -v brew >/dev/null 2>&1; then
     command -v brew
+  elif [[ -x "$HOME/.homebrew/bin/brew" ]]; then
+    print "$HOME/.homebrew/bin/brew"
   elif [[ -x /opt/homebrew/bin/brew ]]; then
     print /opt/homebrew/bin/brew
   else
