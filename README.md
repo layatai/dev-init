@@ -15,6 +15,22 @@ The installer reads prompts from the terminal, so interactive setup still works
 when the script is piped to `zsh`. Piped runs download the matching Git ref as
 an archive so the Neovim config is installed alongside the Brewfile.
 
+## Neovim only
+
+To install just Neovim and the IDE config:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh | zsh
+```
+
+Requires Homebrew. Use `--dry-run` or `--check` the same way as the main
+installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh |
+  zsh -s -- --dry-run
+```
+
 ## Options
 
 ```text

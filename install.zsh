@@ -378,47 +378,10 @@ configure_git_lfs() {
 install_nvim() {
   (( SKIP_NVIM == 0 )) || return
   ensure_repo
-  [[ -d "$REPO_ROOT/nvim" ]] || fail "repository is missing the nvim config"
-
-  local dest="$HOME/.config/nvim"
-  local marker="$dest/.dev-init"
-
-  if [[ -e "$dest" && ! -f "$marker" ]]; then
-    local backup="${dest}.backup.$(date +%Y%m%d%H%M%S)"
-    mv "$dest" "$backup"
-    info "Backed up existing Neovim config to $backup"
-  fi
-
-  info "Installing managed Neovim IDE config"
-  mkdir -p "$dest/lua/plugins" "$dest/lua/configs"
-  local -a files=(
-    .dev-init
-    .stylua.toml
-    init.lua
-    lazy-lock.json
-    lua/autocmds.lua
-    lua/chadrc.lua
-    lua/mappings.lua
-    lua/options.lua
-    lua/plugins/init.lua
-    lua/configs/conform.lua
-    lua/configs/lazy.lua
-    lua/configs/lspconfig.lua
-  )
-  local file
-  for file in "${files[@]}"; do
-    [[ -f "$REPO_ROOT/nvim/$file" ]] || fail "missing nvim/$file"
-    cp "$REPO_ROOT/nvim/$file" "$dest/$file"
-  done
-  print -r -- "${DEV_INIT_REPO}@${DEV_INIT_REF}" >"$marker"
-
-  if command -v nvim >/dev/null 2>&1; then
-    info "Syncing Neovim plugins from the lockfile"
-    nvim --headless "+Lazy! restore" "+qa" ||
-      warn "Neovim plugin restore failed; open nvim later to finish Lazy setup"
-  else
-    warn "neovim is not on PATH yet; open nvim after this shell reloads"
-  fi
+  [[ -f "$REPO_ROOT/install-nvim.zsh" ]] || fail "repository is missing install-nvim.zsh"
+  info "Running Neovim IDE installer"
+  DEV_INIT_REPO="$DEV_INIT_REPO" DEV_INIT_REF="$DEV_INIT_REF" DEV_INIT_ROOT="$REPO_ROOT" \
+    /bin/zsh "$REPO_ROOT/install-nvim.zsh"
 }
 
 configure_github() {
