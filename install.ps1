@@ -35,15 +35,16 @@ function Invoke-NetworkBootstrap {
             Select-Object -First 1 -ExpandProperty FullName
         if (-not $installer) { throw 'Downloaded archive does not contain install.ps1.' }
 
-        $arguments = @{
-            Ref = $Ref
-            Repository = $Repository
-            NonInteractive = $NonInteractive
-            SkipApps = $SkipApps
-            SkipNvim = $SkipNvim
-            Check = $Check
-        }
-        & $installer @arguments
+        $hostExecutable = (Get-Process -Id $PID).Path
+        $arguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $installer,
+            '-Ref', $Ref, '-Repository', $Repository)
+        if ($NonInteractive) { $arguments += '-NonInteractive' }
+        if ($SkipApps) { $arguments += '-SkipApps' }
+        if ($SkipNvim) { $arguments += '-SkipNvim' }
+        if ($Check) { $arguments += '-Check' }
+
+        & $hostExecutable @arguments
+        if ($LASTEXITCODE -ne 0) { throw "Downloaded installer failed (exit $LASTEXITCODE)." }
     } finally {
         if (Test-Path -LiteralPath $tempRoot) {
             Remove-Item -LiteralPath $tempRoot -Recurse -Force
