@@ -1,5 +1,13 @@
 [CmdletBinding()]
-param([switch]$DryRun,[switch]$Check,[switch]$NonInteractive,[switch]$SkipApps,[switch]$SkipNvim)
+param(
+    [switch]$DryRun,
+    [switch]$Check,
+    [switch]$NonInteractive,
+    [switch]$SkipApps,
+    [switch]$SkipNvim,
+    [string]$Ref = 'master',
+    [string]$Repository = 'layatai/dev-init'
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -9,6 +17,39 @@ $BlockEnd = '# <<< dev-init <<<'
 function Step([string]$Message) { Write-Host "==> $Message" -ForegroundColor Blue }
 function Refresh-Path { $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User') }
 function Has([string]$Name) { return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue) }
+function Invoke-NetworkBootstrap {
+    if ($Repository -notmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') { throw "Invalid GitHub repository: $Repository" }
+    if ($Ref -notmatch '^[A-Za-z0-9._/-]+$') { throw "Invalid Git ref: $Ref" }
+
+    $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ("dev-init-" + [guid]::NewGuid().ToString('N'))
+    $archive = Join-Path $tempRoot 'dev-init.zip'
+    $extracted = Join-Path $tempRoot 'source'
+    try {
+        New-Item -ItemType Directory -Path $extracted -Force | Out-Null
+        $url = "https://github.com/$Repository/archive/$Ref.zip"
+        Step "Downloading $Repository@$Ref"
+        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $archive
+        Expand-Archive -LiteralPath $archive -DestinationPath $extracted -Force
+
+        $installer = Get-ChildItem -LiteralPath $extracted -Filter install.ps1 -File -Recurse |
+            Select-Object -First 1 -ExpandProperty FullName
+        if (-not $installer) { throw 'Downloaded archive does not contain install.ps1.' }
+
+        $arguments = @{
+            Ref = $Ref
+            Repository = $Repository
+            NonInteractive = $NonInteractive
+            SkipApps = $SkipApps
+            SkipNvim = $SkipNvim
+            Check = $Check
+        }
+        & $installer @arguments
+    } finally {
+        if (Test-Path -LiteralPath $tempRoot) {
+            Remove-Item -LiteralPath $tempRoot -Recurse -Force
+        }
+    }
+}
 function Packages {
     $manifest = Import-PowerShellDataFile (Join-Path $PSScriptRoot 'packages.psd1')
     $items = @($manifest.Core)
@@ -81,8 +122,12 @@ function Verify {
     Step 'Setup check passed'
 }
 
-if ($DryRun) { Plan; exit 0 }
-if ($Check) { Verify; exit 0 }
+if ($DryRun) { Plan; return }
+if (-not $PSScriptRoot -or -not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'packages.psd1'))) {
+    Invoke-NetworkBootstrap
+    return
+}
+if ($Check) { Verify; return }
 Install-Packages
 Update-Profile
 Install-Runtimes
