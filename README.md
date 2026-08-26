@@ -99,8 +99,24 @@ Mason language servers install on first launch. For Rust work, install
 
 ## Windows
 
-Windows 10/11 can be bootstrapped with the PowerShell-native installer. Open
-PowerShell, review the scripts, then run:
+Windows 10/11 can be bootstrapped from the network with the PowerShell-native
+installer. Open PowerShell and review the installer first:
+
+```powershell
+irm https://raw.githubusercontent.com/layatai/dev-init/master/install.ps1 | more
+```
+
+Then run it:
+
+```powershell
+irm https://raw.githubusercontent.com/layatai/dev-init/master/install.ps1 | iex
+```
+
+The streamed installer downloads the matching repository archive to a temporary
+directory so its package manifest, Neovim installer, and configuration are
+available. The temporary files are removed when setup finishes.
+
+Alternatively, run it from a checkout:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -122,6 +138,7 @@ PowerShell options:
 -NonInteractive  Skip prompts and GitHub browser authentication
 -SkipApps        Skip VS Code, Docker Desktop, and Windows Terminal
 -SkipNvim        Skip Neovim and the managed IDE configuration
+-Ref REF         Download repository files from a specific Git ref
 ```
 
 Examples:
@@ -131,6 +148,14 @@ Examples:
 .\install.ps1 -NonInteractive -SkipApps
 .\install.ps1 -Check
 .\install-nvim.ps1 -Check
+```
+
+To pass options to the network installer, compile the downloaded text as a
+script block, following the same pattern as OpenClaw's Windows installer:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/layatai/dev-init/master/install.ps1))) -DryRun
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/layatai/dev-init/master/install.ps1))) -NonInteractive -SkipApps
 ```
 
 The Windows installer manages Git, Git LFS, GitHub CLI, common command-line
