@@ -96,3 +96,50 @@ Leader is `Space`. Useful keys:
 
 Mason language servers install on first launch. For Rust work, install
 `rust-analyzer` with rustup (`rustup component add rust-analyzer`).
+
+## Windows
+
+Windows 10/11 can be bootstrapped with the PowerShell-native installer. Open
+PowerShell, review the scripts, then run:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\install.ps1
+```
+
+To install just Neovim and the IDE config:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\install-nvim.ps1
+```
+
+PowerShell options:
+
+```text
+-DryRun          Show the plan without changing the machine
+-Check           Verify tools and managed configuration
+-NonInteractive  Skip prompts and GitHub browser authentication
+-SkipApps        Skip VS Code, Docker Desktop, and Windows Terminal
+-SkipNvim        Skip Neovim and the managed IDE configuration
+```
+
+Examples:
+
+```powershell
+.\install.ps1 -DryRun
+.\install.ps1 -NonInteractive -SkipApps
+.\install.ps1 -Check
+.\install-nvim.ps1 -Check
+```
+
+The Windows installer manages Git, Git LFS, GitHub CLI, common command-line
+developer tools, Node LTS, current Python, pnpm, a marked PowerShell profile
+block, and the existing Neovim configuration. Optional applications include VS
+Code, Docker Desktop, and Windows Terminal. WinGet mappings are kept in
+[`packages.psd1`](packages.psd1) for auditing.
+
+Requirements are Windows 10 version 1809 or later (or Windows 11), Windows
+PowerShell 5.1 or PowerShell 7+, WinGet, and internet access during package and
+plugin installation. The installer is safe to rerun and backs up an unmanaged
+Neovim configuration before installing its own.
