@@ -129,6 +129,7 @@ function Set-AuthorizedKeys {
     Step 'Configuring authorized_keys'
     $sshDir = Join-Path $env:USERPROFILE '.ssh'
     $authorizedKeysPath = Join-Path $sshDir 'authorized_keys'
+    $adminKeysPath = Join-Path $env:ProgramData 'ssh\administrators_authorized_keys'
 
     New-Item -ItemType Directory -Path $sshDir -Force | Out-Null
     if (-not (Test-Path -LiteralPath $authorizedKeysPath)) {
@@ -146,6 +147,24 @@ function Set-AuthorizedKeys {
     $userRuleFile = "$env:USERNAME" + ':F'
     icacls $sshDir /inheritance:r /grant:r $userRuleDir | Out-Null
     icacls $authorizedKeysPath /inheritance:r /grant:r $userRuleFile | Out-Null
+
+    $isAdministrator = (Get-LocalGroupMember -Group Administrators -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -eq "$env:COMPUTERNAME\$env:USERNAME" -or $_.Name -eq "$env:USERDOMAIN\$env:USERNAME" })
+    if (-not $isAdministrator) { return }
+
+    Step 'Configuring administrators_authorized_keys'
+    if (-not (Test-Path -LiteralPath $adminKeysPath)) {
+        New-Item -ItemType File -Path $adminKeysPath -Force | Out-Null
+    }
+
+    $existingAdminKeys = @(Get-Content -LiteralPath $adminKeysPath -ErrorAction SilentlyContinue)
+    foreach ($key in $AuthorizedKey) {
+        if ($existingAdminKeys -notcontains $key) {
+            Add-Content -LiteralPath $adminKeysPath -Value $key
+        }
+    }
+
+    icacls $adminKeysPath /inheritance:r /grant:r 'Administrators:F' /grant:r 'SYSTEM:F' | Out-Null
 }
 
 function Set-SshdConfig {
@@ -182,6 +201,18 @@ function Verify {
     }
     if (-not $AllowPasswordAuthentication -and $config -notmatch '(?m)^\s*PasswordAuthentication\s+no\s*$') {
         throw 'PasswordAuthentication is not disabled.'
+    }
+    if ($AuthorizedKey.Count) {
+        $adminKeysPath = Join-Path $env:ProgramData 'ssh\administrators_authorized_keys'
+        $isAdministrator = (Get-LocalGroupMember -Group Administrators -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -eq "$env:COMPUTERNAME\$env:USERNAME" -or $_.Name -eq "$env:USERDOMAIN\$env:USERNAME" })
+        $keysPath = if ($isAdministrator) { $adminKeysPath } else { Join-Path $env:USERPROFILE '.ssh\authorized_keys' }
+        $existingKeys = if (Test-Path -LiteralPath $keysPath) { @(Get-Content -LiteralPath $keysPath) } else { @() }
+        foreach ($key in $AuthorizedKey) {
+            if ($existingKeys -notcontains $key) {
+                throw "Authorized key is missing from $keysPath."
+            }
+        }
     }
 
     $firewallRule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue

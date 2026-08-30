@@ -139,8 +139,10 @@ irm https://raw.githubusercontent.com/layatai/dev-init/master/install-ssh-server
 
 The SSH installer requests administrator elevation when needed, installs and
 starts OpenSSH Server, enables the firewall rule for TCP port 22, adds the
-managed public key to `~\.ssh\authorized_keys`, and disables SSH password login
-by default.
+managed public key to the appropriate Windows OpenSSH authorized keys file, and
+disables SSH password login by default. Administrator accounts use
+`C:\ProgramData\ssh\administrators_authorized_keys`; standard accounts use
+`~\.ssh\authorized_keys`.
 
 PowerShell options:
 
