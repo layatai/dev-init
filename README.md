@@ -3,9 +3,9 @@
 An idempotent, Codex-friendly developer bootstrap for Apple-silicon macOS,
 Linux, and Windows.
 
-## Install
+## macOS
 
-Review the installer, then run it:
+On an Apple-silicon Mac, review the installer, then run it:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.zsh | less
@@ -15,6 +15,10 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.zsh
 The installer reads prompts from the terminal, so interactive setup still works
 when the script is piped to `zsh`. Piped runs download the matching Git ref as
 an archive so the Neovim config is installed alongside the Brewfile.
+
+On Linux, do not use this command: a minimal Linux installation may not have
+`zsh` yet. Use the Linux `install.sh | bash` command below, which installs zsh
+and the other bootstrap prerequisites first.
 
 ## Neovim only
 
@@ -43,6 +47,7 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvi
 On Debian/Ubuntu, Fedora, Arch, and openSUSE, use the Linux entry point:
 
 ```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh | less
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh | bash
 ```
 
@@ -53,6 +58,16 @@ are automatically skipped. The same options are supported, including
 
 From a checkout, run `./install.sh`. To install only Neovim after Homebrew and
 zsh are available, run `zsh install-nvim.zsh`.
+
+To pass options to the network installer:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh |
+  bash -s -- --dry-run
+
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh |
+  bash -s -- --non-interactive --skip-nvim
+```
 
 ## Options
 
@@ -68,9 +83,15 @@ zsh are available, run `zsh install-nvim.zsh`.
 Examples:
 
 ```sh
+# macOS
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.zsh |
   zsh -s -- --dry-run
 
+# Linux
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh |
+  bash -s -- --dry-run
+
+# macOS
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.zsh |
   zsh -s -- --non-interactive --skip-casks
 ```

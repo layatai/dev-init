@@ -35,7 +35,11 @@ install_prerequisites() {
   command -v sudo >/dev/null 2>&1 || [[ "$(id -u)" == 0 ]] ||
     fail "sudo is required to install Linux prerequisites"
   local sudo_cmd=()
-  [[ "$(id -u)" == 0 ]] || sudo_cmd=(sudo)
+  if [[ "$(id -u)" != 0 ]]; then
+    [[ -r /dev/tty ]] || fail "sudo authentication requires a terminal"
+    sudo -v </dev/tty
+    sudo_cmd=(sudo -n)
+  fi
 
   if command -v apt-get >/dev/null 2>&1; then
     "${sudo_cmd[@]}" apt-get update
