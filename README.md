@@ -130,6 +130,18 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\install-nvim.ps1
 ```
 
+To install just OpenSSH Server with public-key login:
+
+```powershell
+irm https://raw.githubusercontent.com/layatai/dev-init/master/install-ssh-server.ps1 | more
+irm https://raw.githubusercontent.com/layatai/dev-init/master/install-ssh-server.ps1 | iex
+```
+
+The SSH installer requests administrator elevation when needed, installs and
+starts OpenSSH Server, enables the firewall rule for TCP port 22, adds the
+managed public key to `~\.ssh\authorized_keys`, and disables SSH password login
+by default.
+
 PowerShell options:
 
 ```text
@@ -141,6 +153,17 @@ PowerShell options:
 -Ref REF         Download repository files from a specific Git ref
 ```
 
+SSH installer options:
+
+```text
+-DryRun                       Show the SSH server plan without changing the machine
+-Check                        Verify OpenSSH Server and authentication settings
+-AllowPasswordAuthentication  Leave SSH password login enabled
+-AuthorizedKey KEY            Add one or more public keys to authorized_keys
+-Ref REF                      Use a specific branch, tag, or commit for self-elevation
+-Repository OWNER/REPO        Use a specific GitHub repository for self-elevation
+```
+
 Examples:
 
 ```powershell
@@ -148,6 +171,7 @@ Examples:
 .\install.ps1 -NonInteractive -SkipApps
 .\install.ps1 -Check
 .\install-nvim.ps1 -Check
+.\install-ssh-server.ps1 -Check
 ```
 
 To pass options to the network installer, compile the downloaded text as a
