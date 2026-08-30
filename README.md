@@ -51,6 +51,11 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh 
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh | bash
 ```
 
+Run that command in an interactive terminal when prerequisites are missing so
+`sudo` can request your password. In a terminal-less runner, install `curl`,
+`git`, `zsh`, `file`, `procps`, and the distribution's C build tools first, or
+provide passwordless sudo for the package-manager commands.
+
 It installs missing bootstrap prerequisites with the system package manager,
 then uses Homebrew on Linux for the shared command-line package set. GUI casks
 are automatically skipped. The same options are supported, including

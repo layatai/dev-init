@@ -36,8 +36,14 @@ install_prerequisites() {
     fail "sudo is required to install Linux prerequisites"
   local sudo_cmd=()
   if [[ "$(id -u)" != 0 ]]; then
-    [[ -r /dev/tty ]] || fail "sudo authentication requires a terminal"
-    sudo -v </dev/tty
+    if sudo -n true 2>/dev/null; then
+      :
+    elif { exec 3<>/dev/tty; } 2>/dev/null; then
+      sudo -v <&3 >&3 2>&3 || fail "sudo authentication failed"
+      exec 3>&-
+    else
+      fail "Linux prerequisites require sudo, but no terminal is attached. Run this from an interactive terminal or install curl, git, zsh, file, procps, and C build tools first."
+    fi
     sudo_cmd=(sudo -n)
   fi
 
