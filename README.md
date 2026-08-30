@@ -1,6 +1,7 @@
 # dev-init
 
-An idempotent, Codex-friendly developer bootstrap for Apple-silicon macOS.
+An idempotent, Codex-friendly developer bootstrap for Apple-silicon macOS,
+Linux, and Windows.
 
 ## Install
 
@@ -23,7 +24,7 @@ To install just Neovim and the IDE config:
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh | zsh
 ```
 
-Requires Homebrew (`~/.homebrew` or `/opt/homebrew`). The script installs
+Requires Homebrew (`~/.homebrew`, `/opt/homebrew`, or Linuxbrew). The script installs
 Neovim, `tree-sitter-cli`, and Node (`npm` is required for Mason
 TypeScript/Prettier/ESLint packages), puts `nvim` on the login PATH, copies
 the config, restores Lazy plugins, then blocks until Mason language
@@ -36,6 +37,22 @@ Use `--dry-run` or `--check` the same way as the main installer:
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-nvim.zsh |
   zsh -s -- --dry-run
 ```
+
+## Linux
+
+On Debian/Ubuntu, Fedora, Arch, and openSUSE, use the Linux entry point:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh | bash
+```
+
+It installs missing bootstrap prerequisites with the system package manager,
+then uses Homebrew on Linux for the shared command-line package set. GUI casks
+are automatically skipped. The same options are supported, including
+`--dry-run`, `--check`, `--non-interactive`, and `--skip-nvim`.
+
+From a checkout, run `./install.sh`. To install only Neovim after Homebrew and
+zsh are available, run `zsh install-nvim.zsh`.
 
 ## Options
 

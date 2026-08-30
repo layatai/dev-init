@@ -6,6 +6,7 @@ setopt PIPE_FAIL
 readonly INSTALLER_SOURCE="${(%):-%N}"
 readonly DEV_INIT_REPO="${DEV_INIT_REPO:-layatai/dev-init}"
 DEV_INIT_REF="${DEV_INIT_REF:-master}"
+readonly OS_NAME="$(uname -s)"
 
 DRY_RUN=0
 CHECK_ONLY=0
@@ -73,8 +74,11 @@ done
 [[ "$DEV_INIT_REF" =~ '^[A-Za-z0-9._/-]+$' ]] ||
   fail "invalid Git ref: $DEV_INIT_REF"
 
-[[ "$(uname -s)" == "Darwin" ]] || fail "this installer currently supports macOS only"
-[[ "$(uname -m)" == "arm64" ]] || fail "this installer currently supports Apple silicon only"
+[[ "$OS_NAME" == "Darwin" || "$OS_NAME" == "Linux" ]] ||
+  fail "this installer supports macOS and Linux only"
+if [[ "$OS_NAME" == "Darwin" && "$(uname -m)" != "arm64" ]]; then
+  fail "this installer currently supports Apple silicon Macs only"
+fi
 
 locate_brew() {
   if command -v brew >/dev/null 2>&1; then
@@ -83,6 +87,8 @@ locate_brew() {
     print "$HOME/.homebrew/bin/brew"
   elif [[ -x /opt/homebrew/bin/brew ]]; then
     print /opt/homebrew/bin/brew
+  elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    print /home/linuxbrew/.linuxbrew/bin/brew
   else
     return 1
   fi
@@ -97,7 +103,7 @@ activate_brew() {
 login_has() {
   local name="$1"
   # A real login shell sources .zprofile. `ssh host 'cmd'` and `curl | zsh` do not.
-  /bin/zsh -l -c "command -v ${(q)name}" >/dev/null 2>&1
+  zsh -l -c "command -v ${(q)name}" >/dev/null 2>&1
 }
 
 ensure_login_path() {
@@ -173,7 +179,7 @@ print_plan() {
   cat <<EOF
 Would install and fully bootstrap the Neovim IDE:
   - Neovim, tree-sitter-cli, and Node (npm) via Homebrew
-  - put nvim on the login PATH (~/.homebrew, /opt/homebrew, or ~/.local/bin)
+  - put nvim on the login PATH (Homebrew or ~/.local/bin)
   - rust-analyzer and rustfmt via rustup, when rustup is present
   - the managed NvChad IDE config into ~/.config/nvim
   - Lazy plugins from nvim/lazy-lock.json

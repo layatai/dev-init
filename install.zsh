@@ -8,6 +8,7 @@ readonly DEV_INIT_REPO="${DEV_INIT_REPO:-layatai/dev-init}"
 DEV_INIT_REF="${DEV_INIT_REF:-master}"
 readonly BLOCK_START="# >>> dev-init >>>"
 readonly BLOCK_END="# <<< dev-init <<<"
+readonly OS_NAME="$(uname -s)"
 
 DRY_RUN=0
 CHECK_ONLY=0
@@ -88,11 +89,16 @@ done
 [[ "$DEV_INIT_REF" =~ '^[A-Za-z0-9._/-]+$' ]] ||
   fail "invalid Git ref: $DEV_INIT_REF"
 
-[[ "$(uname -s)" == "Darwin" ]] || fail "this installer currently supports macOS only"
-[[ "$(uname -m)" == "arm64" ]] || fail "this installer currently supports Apple silicon only"
-
-if ! xcode-select -p >/dev/null 2>&1; then
+[[ "$OS_NAME" == "Darwin" || "$OS_NAME" == "Linux" ]] ||
+  fail "this installer supports macOS and Linux only"
+if [[ "$OS_NAME" == "Darwin" && "$(uname -m)" != "arm64" ]]; then
+  fail "this installer currently supports Apple silicon Macs only"
+fi
+if [[ "$OS_NAME" == "Darwin" ]] && ! xcode-select -p >/dev/null 2>&1; then
   fail "Xcode Command Line Tools are required. Run: xcode-select --install"
+fi
+if [[ "$OS_NAME" == "Linux" ]]; then
+  SKIP_CASKS=1
 fi
 
 is_interactive() {
@@ -123,6 +129,8 @@ locate_brew() {
     print "$HOME/.homebrew/bin/brew"
   elif [[ -x /opt/homebrew/bin/brew ]]; then
     print /opt/homebrew/bin/brew
+  elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    print /home/linuxbrew/.linuxbrew/bin/brew
   else
     return 1
   fi
@@ -185,7 +193,7 @@ effective_brewfile() {
 
 print_plan() {
   cat <<EOF
-Would configure this Apple-silicon Mac with:
+Would configure this ${OS_NAME} machine with:
   - Homebrew
   - Git, Git LFS, GitHub CLI
   - ripgrep, fd, fzf, jq, yq, bat, eza, tree
@@ -337,8 +345,12 @@ update_zshrc() {
 
   cat >>"$temp_file" <<'ZSH'
 # >>> dev-init >>>
-if [[ -x /opt/homebrew/bin/brew ]]; then
+if [[ -x "$HOME/.homebrew/bin/brew" ]]; then
+  eval "$("$HOME/.homebrew/bin/brew" shellenv)"
+elif [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 fi
 
 if command -v mise >/dev/null 2>&1; then
@@ -383,7 +395,7 @@ install_nvim() {
   [[ -f "$REPO_ROOT/install-nvim.zsh" ]] || fail "repository is missing install-nvim.zsh"
   info "Running Neovim IDE installer"
   DEV_INIT_REPO="$DEV_INIT_REPO" DEV_INIT_REF="$DEV_INIT_REF" DEV_INIT_ROOT="$REPO_ROOT" \
-    /bin/zsh "$REPO_ROOT/install-nvim.zsh"
+    zsh "$REPO_ROOT/install-nvim.zsh"
 }
 
 configure_github() {
@@ -414,7 +426,11 @@ configure_github() {
 
   local private_key="${public_keys[1]%.pub}"
   if [[ -f "$private_key" ]]; then
-    ssh-add --apple-use-keychain "$private_key" || ssh-add "$private_key"
+    if [[ "$OS_NAME" == "Darwin" ]]; then
+      ssh-add --apple-use-keychain "$private_key" || ssh-add "$private_key"
+    else
+      ssh-add "$private_key" || warn "Could not add the SSH key to an agent"
+    fi
   fi
 
   info "Starting GitHub browser authentication"
@@ -423,6 +439,7 @@ configure_github() {
 }
 
 initialize_orbstack() {
+  [[ "$OS_NAME" == "Darwin" ]] || return
   (( SKIP_CASKS == 0 )) || return
   command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && return
 
@@ -461,7 +478,11 @@ if is_interactive; then
   configure_github
   initialize_orbstack
 else
-  warn "Non-interactive mode skipped GitHub authentication and OrbStack first-run setup"
+  if [[ "$OS_NAME" == "Darwin" ]]; then
+    warn "Non-interactive mode skipped GitHub authentication and OrbStack first-run setup"
+  else
+    warn "Non-interactive mode skipped GitHub authentication"
+  fi
 fi
 
 hash -r
