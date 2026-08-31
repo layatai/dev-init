@@ -74,6 +74,31 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.sh 
   bash -s -- --non-interactive --skip-nvim
 ```
 
+## Omarchy desktop setup
+
+On an existing [Omarchy](https://omarchy.org) installation, review and apply
+the personal desktop overrides with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-omarchy.sh | less
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-omarchy.sh | bash
+```
+
+This installs only user-level files under `~/.config/hypr/`. It enables natural
+touchpad scrolling, three-finger horizontal workspace swipes, and native 1x
+display scaling. Existing differing files receive timestamped backups. It does
+not modify Omarchy's packaged files under `/usr/share/omarchy`.
+
+The installer is safe to rerun. Its supported options are:
+
+```text
+--dry-run  Show the planned Omarchy changes
+--check    Verify that the managed files match
+--ref REF  Use a specific branch, tag, or commit
+```
+
+From a checkout, run `./install-omarchy.sh`.
+
 ## Options
 
 ```text
