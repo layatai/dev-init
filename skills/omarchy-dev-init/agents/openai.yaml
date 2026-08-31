@@ -1,0 +1,4 @@
+interface:
+  display_name: "Omarchy Dev Init"
+  short_description: "Maintain and apply layatai/dev-init Omarchy setup"
+  default_prompt: "Use $omarchy-dev-init to audit, update, test, or apply my reproducible Omarchy setup."
