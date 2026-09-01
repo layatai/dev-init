@@ -58,7 +58,8 @@ provide passwordless sudo for the package-manager commands.
 
 It installs missing bootstrap prerequisites with the system package manager,
 then uses Homebrew on Linux for the shared command-line package set. GUI casks
-are automatically skipped. The same options are supported, including
+are automatically skipped; Telegram Desktop is installed by the separate
+Omarchy setup below. The same options are supported, including
 `--dry-run`, `--check`, `--non-interactive`, and `--skip-nvim`.
 
 From a checkout, run `./install.sh`. To install only Neovim after Homebrew and
@@ -84,10 +85,11 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-oma
 curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-omarchy.sh | bash
 ```
 
-This installs only user-level files under `~/.config/hypr/`. It enables natural
-touchpad scrolling, three-finger horizontal workspace swipes, and native 1x
-display scaling. Existing differing files receive timestamped backups. It does
-not modify Omarchy's packaged files under `/usr/share/omarchy`.
+This installs Telegram Desktop through Omarchy's package manager and user-level
+files under `~/.config/hypr/`. It enables natural touchpad scrolling,
+three-finger horizontal workspace swipes, and native 1x display scaling.
+Existing differing files receive timestamped backups. It does not modify
+Omarchy's packaged files under `/usr/share/omarchy`.
 
 The installer is safe to rerun. Its supported options are:
 
@@ -105,7 +107,7 @@ From a checkout, run `./install-omarchy.sh`.
 --dry-run          Show the planned setup without changing the machine
 --check            Verify the expected tools and configuration
 --non-interactive  Skip prompts, application launches, and authentication
---skip-casks       Skip OrbStack, Visual Studio Code, and iTerm2
+--skip-casks       Skip OrbStack, Visual Studio Code, iTerm2, and Telegram Desktop
 --skip-nvim        Skip Neovim and the managed IDE config
 --ref REF          Use a specific branch, tag, or commit
 ```
@@ -136,6 +138,7 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install.zsh
 - Git LFS initialization
 - Optional SSH key and GitHub CLI authentication
 - Optional OrbStack first-run startup
+- Telegram Desktop on macOS, Windows, and Omarchy
 
 The first shell edit creates a timestamped `.zshrc` backup. Reruns replace only
 the managed block and leave the rest of the file intact. An unmanaged
@@ -218,7 +221,7 @@ PowerShell options:
 -DryRun          Show the plan without changing the machine
 -Check           Verify tools and managed configuration
 -NonInteractive  Skip prompts and GitHub browser authentication
--SkipApps        Skip VS Code, Docker Desktop, and Windows Terminal
+-SkipApps        Skip VS Code, Docker Desktop, Windows Terminal, and Telegram Desktop
 -SkipNvim        Skip Neovim and the managed IDE configuration
 -Ref REF         Download repository files from a specific Git ref
 ```
@@ -255,7 +258,8 @@ script block, following the same pattern as OpenClaw's Windows installer:
 The Windows installer manages Git, Git LFS, GitHub CLI, common command-line
 developer tools, Node LTS, current Python, pnpm, a marked PowerShell profile
 block, and the existing Neovim configuration. Optional applications include VS
-Code, Docker Desktop, and Windows Terminal. WinGet mappings are kept in
+Code, Docker Desktop, Windows Terminal, and Telegram Desktop. WinGet mappings
+are kept in
 [`packages.psd1`](packages.psd1) for auditing.
 
 Requirements are Windows 10 version 1809 or later (or Windows 11), Windows

@@ -61,7 +61,7 @@ function Packages {
 function Plan {
     @('Would configure this Windows PC with:','  - Git, Git LFS, and GitHub CLI','  - modern CLI search, data, build, and shell tools','  - mise, uv, Node LTS, Python, and pnpm','  - a managed PowerShell profile block') | Write-Host
     if (-not $SkipNvim) { Write-Host '  - Neovim with the managed NvChad IDE config' }
-    if (-not $SkipApps) { Write-Host '  - VS Code, Docker Desktop, and Windows Terminal' }
+    if (-not $SkipApps) { Write-Host '  - VS Code, Docker Desktop, Windows Terminal, and Telegram Desktop' }
 }
 function Install-Packages {
     if (-not (Has winget)) { throw 'WinGet is required. Install App Installer from the Microsoft Store.' }

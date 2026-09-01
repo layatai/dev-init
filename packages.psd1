@@ -18,6 +18,7 @@
     Apps = @(
         @{ Id='Microsoft.VisualStudioCode'; Command='code' },
         @{ Id='Docker.DockerDesktop'; Command='docker' },
-        @{ Id='Microsoft.WindowsTerminal'; Command='wt' }
+        @{ Id='Microsoft.WindowsTerminal'; Command='wt' },
+        @{ Id='Telegram.TelegramDesktop'; Command='Telegram' }
     )
 }

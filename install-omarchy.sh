@@ -102,6 +102,7 @@ if [[ "$MODE" == "dry-run" ]]; then
 Would install these user-level Omarchy overrides:
   - ${CONFIG_HOME}/hypr/input.lua (natural scrolling and three-finger workspace swipe)
   - ${CONFIG_HOME}/hypr/monitors.lua (1x display and GDK scale)
+  - Telegram Desktop (telegram-desktop package, if missing)
 
 Existing differing files would receive timestamped backups.
 No files under /usr/share/omarchy would be changed.
@@ -110,8 +111,22 @@ PLAN
 fi
 
 if [[ "$MODE" == "check" ]]; then
-  check_files
-  exit
+  failed=0
+  check_files || failed=1
+  if command -v Telegram >/dev/null 2>&1; then
+    printf 'ok: Telegram Desktop\n'
+  else
+    printf 'missing: Telegram Desktop\n' >&2
+    failed=1
+  fi
+  exit "$failed"
+fi
+
+if command -v Telegram >/dev/null 2>&1; then
+  info "Telegram Desktop is already installed"
+else
+  info "Installing Telegram Desktop"
+  omarchy pkg add telegram-desktop
 fi
 
 timestamp="$(date +%Y%m%d-%H%M%S)"

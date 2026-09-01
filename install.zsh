@@ -39,7 +39,7 @@ Options:
   --dry-run          Show the planned setup without changing the machine
   --check            Verify the expected tools and configuration
   --non-interactive  Do not prompt, open applications, or start authentication
-  --skip-casks       Skip OrbStack, Visual Studio Code, and iTerm2
+  --skip-casks       Skip OrbStack, Visual Studio Code, iTerm2, and Telegram Desktop
   --skip-nvim        Skip Neovim and the managed IDE config
   --ref REF          Download repository files from a specific Git ref
   -h, --help         Show this help
@@ -208,7 +208,7 @@ EOF
     print "  - Neovim skipped"
   fi
   if (( SKIP_CASKS == 0 )); then
-    print "  - OrbStack, Visual Studio Code, iTerm2"
+    print "  - OrbStack, Visual Studio Code, iTerm2, Telegram Desktop"
   else
     print "  - GUI casks skipped"
   fi
@@ -257,7 +257,7 @@ check_setup() {
 
   if (( SKIP_CASKS == 0 )); then
     local app
-    for app in OrbStack "Visual Studio Code" iTerm; do
+    for app in OrbStack "Visual Studio Code" iTerm Telegram; do
       if [[ -d "/Applications/${app}.app" || -d "$HOME/Applications/${app}.app" ]]; then
         printf "  %-14s %s\n" "$app" "ok"
       else
