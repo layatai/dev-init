@@ -1,0 +1,4 @@
+interface:
+  display_name: "Windows SSH Server"
+  short_description: "Set up and verify Windows OpenSSH Server"
+  default_prompt: "Use $windows-ssh-server to install, repair, or verify my Windows OpenSSH Server public-key setup."
