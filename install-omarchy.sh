@@ -51,6 +51,7 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
 
 managed_files=(
   "hypr/input.lua"
+  "hypr/looknfeel.lua"
   "hypr/monitors.lua"
 )
 
@@ -101,6 +102,7 @@ if [[ "$MODE" == "dry-run" ]]; then
   cat <<PLAN
 Would install these user-level Omarchy overrides:
   - ${CONFIG_HOME}/hypr/input.lua (natural scrolling and three-finger workspace swipe)
+  - ${CONFIG_HOME}/hypr/looknfeel.lua (1px inner and 2px outer window gaps)
   - ${CONFIG_HOME}/hypr/monitors.lua (1x display and GDK scale)
   - Telegram Desktop (telegram-desktop package, if missing)
 

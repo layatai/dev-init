@@ -65,6 +65,21 @@ Omarchy setup below. The same options are supported, including
 From a checkout, run `./install.sh`. To install only Neovim after Homebrew and
 zsh are available, run `zsh install-nvim.zsh`.
 
+To install just OpenSSH Server with `layatai`'s public GitHub keys and disable
+password login:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-ssh-server.sh | less
+curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-ssh-server.sh |
+  sudo bash -s -- --user "$USER"
+```
+
+From a checkout, run `./install-ssh-server.sh`. The installer supports
+`--dry-run`, `--check`, `--github-user USER`, `--user USER`, and
+`--allow-password-authentication`. It installs OpenSSH through apt, dnf,
+pacman, or zypper; merges the selected GitHub user's published keys without
+removing existing keys; enables `sshd`; and validates the effective config.
+
 To pass options to the network installer:
 
 ```sh
@@ -87,7 +102,8 @@ curl -fsSL https://raw.githubusercontent.com/layatai/dev-init/master/install-oma
 
 This installs Telegram Desktop through Omarchy's package manager and user-level
 files under `~/.config/hypr/`. It enables natural touchpad scrolling,
-three-finger horizontal workspace swipes, and native 1x display scaling.
+three-finger horizontal workspace swipes, compact 1px inner and 2px outer
+window gaps, and native 1x display scaling.
 Existing differing files receive timestamped backups. It does not modify
 Omarchy's packaged files under `/usr/share/omarchy`.
 
