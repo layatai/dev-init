@@ -81,8 +81,8 @@ function Invoke-ElevatedSelf {
     }
 
     Step 'Requesting administrator elevation'
-    Start-Process -FilePath powershell.exe -Verb RunAs -Wait -ArgumentList (ConvertTo-ArgumentList @arguments)
-    exit $LASTEXITCODE
+    $process = Start-Process -FilePath powershell.exe -Verb RunAs -Wait -PassThru -ArgumentList (ConvertTo-ArgumentList @arguments)
+    exit $process.ExitCode
 }
 
 function Set-ConfigValue([string[]]$Config, [string]$Name, [string]$Value) {
@@ -98,6 +98,20 @@ function Set-ConfigValue([string[]]$Config, [string]$Name, [string]$Value) {
     return @($Config + $replacement)
 }
 
+function Get-OpenSshFirewallRule {
+    $rule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
+    if ($rule) { return $rule }
+
+    $rules = @(Get-NetFirewallRule -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayGroup -eq 'OpenSSH Server' -or $_.DisplayName -match 'OpenSSH.*(Server|sshd)' } |
+        Where-Object {
+            $portFilter = $_ | Get-NetFirewallPortFilter
+            $portFilter.Protocol -eq 'TCP' -and @($portFilter.LocalPort) -contains '22'
+        })
+
+    return $rules | Select-Object -First 1
+}
+
 function Install-OpenSshServer {
     Step 'Installing OpenSSH Server'
     $capability = Get-WindowsCapability -Online -Name $OpenSshCapability
@@ -108,7 +122,7 @@ function Install-OpenSshServer {
     Set-Service -Name sshd -StartupType Automatic
     Start-Service -Name sshd
 
-    $firewallRule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
+    $firewallRule = Get-OpenSshFirewallRule
     if (-not $firewallRule) {
         New-NetFirewallRule `
             -Name 'OpenSSH-Server-In-TCP' `
@@ -119,7 +133,7 @@ function Install-OpenSshServer {
             -Action Allow `
             -LocalPort 22 | Out-Null
     } elseif ($firewallRule.Enabled -ne 'True') {
-        Enable-NetFirewallRule -Name 'OpenSSH-Server-In-TCP'
+        $firewallRule | Enable-NetFirewallRule
     }
 }
 
@@ -215,7 +229,7 @@ function Verify {
         }
     }
 
-    $firewallRule = Get-NetFirewallRule -Name 'OpenSSH-Server-In-TCP' -ErrorAction SilentlyContinue
+    $firewallRule = Get-OpenSshFirewallRule
     if (-not $firewallRule -or $firewallRule.Enabled -ne 'True') {
         throw 'OpenSSH firewall rule is missing or disabled.'
     }
